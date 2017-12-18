@@ -52,11 +52,11 @@ while True:
     x, thresh = cv2.threshold(blurred,0,255,cv2.THRESH_BINARY+cv2.THRESH_OTSU)
     #thresh = cv2.threshold(blurred, 30, 255, cv2.THRESH_BINARY)[1]
     
-    new_thresh = cv2.bitwise_and(edge, cm)
+    #new_thresh = cv2.bitwise_and(edge, cm)
+    new_thresh =edge
     # find contours in the thresholded image and initialize the
     # shape detector
-    cnts = cv2.findContours(new_thresh.copy(), cv2.RETR_EXTERNAL,
-        cv2.CHAIN_APPROX_NONE)
+    cnts = cv2.findContours(new_thresh.copy(), cv2.RETR_EXTERNAL,cv2.CHAIN_APPROX_NONE)
     cnts = cnts[0] if imutils.is_cv2() else cnts[1]
     sd = ShapeDetector()
     
@@ -65,34 +65,60 @@ while True:
 
     #loop over the contours
     ct=0
+    shape_array=[]
+    #cv2.drawContours(image, cnts, -1, (0, 255, 0), 2)
+    max_peri = 0
+    max_cont = []
     for c in cnts:
-         # compute the center of the contour, then detect the name of the
-         # shape using only the contour
-        
-        M = cv2.moments(c)
-
-        try:
-            cX = int((M["m10"] / M["m00"]) * ratio)
-            cY = int((M["m01"] / M["m00"]) * ratio)
-        except:
-            cX = 400
-            cY = 500
-
-        shape = sd.detect(c)
+        peri = cv2.arcLength(c, True)
+        if peri>max_peri:
+            max_peri = peri
+            max_cont =c
+    #print(peri)
+    cv2.drawContours(image, max_cont, -1, (0, 255, 0), 2)
     
-         #
-         # # multiply the contour (x, y)-coordinates by the resize ratio,
-         # # then draw the contouqrs and the name of the shape on the image
-        c = c.astype("float")
-        c *= ratio
-        c = c.astype("int")
-        cv2.drawContours(image, [c], -1, (0, 255, 0), 2)
-        cv2.putText(image, shape, (cX, cY), cv2.FONT_HERSHEY_SIMPLEX,
-            0.5, (255, 255, 255), 2)
+    n_mask = gray.copy()
+    n_mask[n_mask < 0] =0
+    cv2.fillPoly(n_mask, max_cont, 255)
+    n_mask = np.logical_not(n_mask)
     
+    #cv2.imshow('nmask', n_mask)
+    #image[n_mask]=0
+    #hull=cv2.convexHull(max_cont)
+    
+    #cv2.drawContours(image, [hull], -1, (0, 255, 0), 2)
+    
+    
+#    for c in cnts:
+#         # compute the center of the contour, then detect the name of the
+#         # shape using only the contour
+#        M = cv2.moments(c)
+#
+#        try:
+#            cX = int((M["m10"] / M["m00"]) * ratio)
+#            cY = int((M["m01"] / M["m00"]) * ratio)
+#        except:
+#            cX = 400
+#            cY = 500
+#
+#        shape = sd.detect(c)
+#        shape_array.append(shape)
+#    
+#         #
+#         # # multiply the contour (x, y)-coordinates by the resize ratio,
+#         # # then draw the contouqrs and the name of the shape on the image
+#        c = c.astype("float")
+#        c *= ratio
+#        c = c.astype("int")
+#        cv2.drawContours(image, [c], -1, (0, 255, 0), 2)
+#        cv2.putText(image, shape, (cX, cY), cv2.FONT_HERSHEY_SIMPLEX,
+#            0.5, (255, 255, 255), 2)
+#    
          # show the output image
+    
+    
 
-    cv2.circle(image,(320, 240), 200, (78,120,99), 3)
+    #cv2.circle(image,(320, 240), 200, (78,120,99), 3)
     cv2.imshow("Image", image)
     if cv2.waitKey(1) & 0xFF == ord('q'):
         break
